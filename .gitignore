@@ -1,0 +1,14 @@
+# Ignore Python junk
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# Ignore React junk (The heavy stuff)
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+
+# Ignore the heavy AI model IF it was huge (but ours is small, so we keep it)
+# human_brain_v1.pth
