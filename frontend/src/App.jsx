@@ -21,11 +21,14 @@ function App() {
 
     try {
       // GET PREDICTION
-      const predReq = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionID }),
-      });
+      const predReq = await fetch(
+        "https://mind-reader-ai.onrender.com/predict",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionID }),
+        }
+      );
       const predData = await predReq.json();
       const aiGuess = predData.prediction;
 
@@ -42,7 +45,7 @@ function App() {
       }
 
       // 2. TEACH THE AI (Send your move so it learns)
-      await fetch("http://127.0.0.1:8000/learn", {
+      await fetch("https://mind-reader-ai.onrender.com/learn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionID, user_move: number }),
