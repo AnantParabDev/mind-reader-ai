@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // <--- CHANGED: Added useEffect
 import "./App.css";
 
 function App() {
@@ -6,23 +6,18 @@ function App() {
     "user_" + Math.random().toString(36).substr(2, 9)
   );
   const [history, setHistory] = useState([]);
-  const [aiPrediction, setAiPrediction] = useState(null);
   const [status, setStatus] = useState("AI is waiting...");
   const [scores, setScores] = useState({ ai: 0, human: 0 });
 
-  // The numbers 1-8 for our keypad
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8];
 
   const handlePlay = async (number) => {
-    // 1. First, tell AI to PREDICT what we are about to do (based on past)
-    // In a real game, AI predicts BEFORE we click, but we fetch it now to compare.
-
     setStatus("Reading mind...");
 
     try {
-      // GET PREDICTION
+      // 1. Get Prediction
       const predReq = await fetch(
-        "https://mind-reader-ai.onrender.com/predict",
+        "https://mind-reader-api.onrender.com/predict",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -32,7 +27,7 @@ function App() {
       const predData = await predReq.json();
       const aiGuess = predData.prediction;
 
-      // UPDATE SCORE
+      // 2. Determine Winner
       let winner = "";
       if (aiGuess === number) {
         winner = "AI";
@@ -44,22 +39,40 @@ function App() {
         setStatus(`YOU WON! AI guessed ${aiGuess}`);
       }
 
-      // 2. TEACH THE AI (Send your move so it learns)
-      await fetch("https://mind-reader-ai.onrender.com/learn", {
+      // 3. Teach AI
+      await fetch("https://mind-reader-api.onrender.com/learn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionID, user_move: number }),
       });
 
-      // Update UI History
       setHistory((prev) =>
         [{ human: number, ai: aiGuess, winner }, ...prev].slice(0, 10)
       );
     } catch (error) {
       console.error("Error:", error);
-      setStatus("Error: Is the Python backend running?");
+      setStatus("Error: Backend offline?");
     }
   };
+
+  // --- NEW CODE: KEYBOARD LISTENER ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check if the key pressed is '1', '2', ... '8'
+      if (e.key >= "1" && e.key <= "8") {
+        handlePlay(parseInt(e.key));
+      }
+    };
+
+    // Attach listener to window
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup: Remove listener when component unmounts (Important!)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []); // Empty brackets [] means "run this only once when app loads"
+  // ------------------------------------
 
   return (
     <div
@@ -70,7 +83,7 @@ function App() {
       }}
     >
       <h1>🔮 AI Mind Reader</h1>
-      <p>Pick a number. The AI tries to predict it.</p>
+      <p>Press 1-8 on your keyboard or click the buttons.</p>
 
       <div
         style={{
@@ -89,7 +102,6 @@ function App() {
 
       <h2>{status}</h2>
 
-      {/* KEYPAD UI */}
       <div
         style={{
           display: "grid",
@@ -118,7 +130,6 @@ function App() {
         ))}
       </div>
 
-      {/* HISTORY */}
       <div style={{ marginTop: "30px" }}>
         <h3>Last 10 Rounds</h3>
         <ul style={{ listStyle: "none", padding: 0 }}>
@@ -130,8 +141,7 @@ function App() {
                 margin: "5px",
               }}
             >
-              You picked <b>{round.human}</b> - AI guessed <b>{round.ai}</b> (
-              {round.winner === "AI" ? "AI Won" : "You Won"})
+              You: <b>{round.human}</b> - AI: <b>{round.ai}</b>
             </li>
           ))}
         </ul>
